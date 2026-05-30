@@ -1,21 +1,19 @@
 from pathlib import Path
 from faster_whisper import WhisperModel
-from urllib.request import urlopen, urlretrieve
+from urllib.request import urlopen, Request
 from PIL import Image
 import sounddevice as sd
 import numpy as np
 import wave
 import json
-import random
 
 
 DESC_FILENAME = "description.txt"
 FOLDER = Path(__file__).resolve().parent  # Папка программы
-TEMPFILE = "voice.wav"
+TEMPFILE = FOLDER / "voice.wav"
 USE_VOICE = 1
 MODEL = "tiny"
-PROMPT = ("Команды голосового управления на русском языке:"
-          "случайный, эпизод, сохранить, показать, разрешение")
+PROMPT = "Дай точную расшифорвку на русском языке: случайный, эпизод, сохранить, показать, разрешение"
 EXTENSIONS = {
     ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac",
     ".mp4", ".mpeg", ".mpga", ".webm"
@@ -50,42 +48,63 @@ def record_voice(filename):
     except:
         raise RuntimeError("Не удалось подключить микрофон")
     sd.wait()
-    with wave.open(filename, "wb") as file:
+    print("Запись завершена!",end=" ")
+    with wave.open(str(filename), "wb") as file:
         file.setnchannels(1)
         file.setsampwidth(2)
         file.setframerate(16000)
         file.writeframes(audio.tobytes())
 
 
-def obrabotka(command, id):
-    print("Распознано: ", command)
+def transcribe(filename):
+    segments, info = WhisperModel(MODEL).transcribe(
+        str(TEMPFILE),
+        language="ru",
+        task="transcribe",
+        initial_prompt=PROMPT
+    )
+    text = " ".join(segment.text.strip() for segment in segments).strip()
+    print(f"Распознано: {text}")
+    return text.lower().replace("ё", "е")
 
+
+def get_json(url):
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def download_file(url, id):
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request) as response:
+        data = response.read()
+    with open(FOLDER / f"{id}.jpeg", "wb") as file:
+        file.write(data)
+
+
+def obrabotka(command, id):
     if ("лучай" in command) or ("СЛУЧАЙ" in command):
         id = np.random.randint(1, 826)
-        with urlopen(f"https://rickandmortyapi.com/api/character/{id}") as response:
-            data = json.loads(response.read().decode("utf-8"))
+        data = get_json(f"{API}{id}")
         print(f"Имя персонажа: {data["name"]}")
 
     elif ("эпизод" in command) or ("ЭПИЗОД" in command):
-        with urlopen(f"https://rickandmortyapi.com/api/character/{id}") as response:
-            data = json.loads(response.read().decode("utf-8"))
+        data = get_json(f"{API}{id}")
         if id:
-            print(f"Эпизод появления: {data["episode"].rstrip("/").split("/")[-1]}")
+            print(f"Эпизод появления: {data["episode"][0].rstrip("/").split("/")[-1]}")
         else:
             print("Для начала нужно выбрать персонажа")
 
     elif ("охран" in command) or ("СОХРАН" in command):
-        with urlopen(f"https://rickandmortyapi.com/api/character/{id}") as response:
-            data = json.loads(response.read().decode("utf-8"))
+        data = get_json(f"{API}{id}")
         if id:
             image_filename = FOLDER / f"{id}.jpeg"
-            urlretrieve(data["image"], image_filename)
-            print(f"Картинка для персонажа {data["name"]} сохранена в файл {image_filename}")
+            download_file(data["image"], id)
+            print(f"Картинка для персонажа {data["name"]} сохранена в файл {id}.jpeg")
         else:
             print("Для начала нужно выбрать персонажа")
 
     elif ("оказ" in command) or ("ПОКАЗ" in command):
-        if f"{id}.jpeg".exists():
+        if (FOLDER / f"{id}.jpeg").exists():
             with Image.open(f"{id}.jpeg") as img:
                 img.show()
             print("Картинка открыта")
@@ -95,7 +114,7 @@ def obrabotka(command, id):
             print("Для начала нужно выбрать персонажа и сохранить картинку")
 
     elif ("азреш" in command) or ("СОХРАН" in command):
-        if f"{id}.jpeg".exists():
+        if (FOLDER / f"{id}.jpeg").exists():
             with Image.open(f"{id}.jpeg") as img:
                 print(f"Разрешение картинки: {img.width}x{img.height}")
         elif id:
@@ -115,7 +134,7 @@ if USE_VOICE != 0:
     while(1):
         record_voice(TEMPFILE)
         command = transcribe(TEMPFILE)
-        obrabotka(command)
+        id = obrabotka(command, id)
         TEMPFILE.unlink()
 else:
     files = [ # Ищем файлы
