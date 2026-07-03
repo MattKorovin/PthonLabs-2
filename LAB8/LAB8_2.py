@@ -20,6 +20,11 @@ if use_description != "":
         print("Не удалось найти файл с описанием задачи")
 
 
+# Находим метку
+point = cv2.imread(IMG, cv2.IMREAD_GRAYSCALE)
+if point is None:
+    raise RuntimeError("Изображение метки не найдено")
+
 # Камера откройся!!!
 cap = cv2.VideoCapture(CAM, cv2.CAP_DSHOW)
 if cap.isOpened():
@@ -37,3 +42,16 @@ else:
             raise RuntimeError("Не удалось открыть камеру. Попробуйте"
                                "сменить камеру или запустить"
                                "программу от имени администратора")
+
+ys, xs = np.where(point < 245)
+if len(xs) == 0 or len(ys) == 0:
+    raise RuntimeError("На изображении метки не найдены тёмные области")
+
+x1 = xs.min()
+x2 = xs.max()
+y1 = ys.min()
+y2 = ys.max()
+point = point[y1:y2, x1:x2]
+
+metkas = []
+angles = [-20,-10,0,10,20] # Так надёжнее определяется
