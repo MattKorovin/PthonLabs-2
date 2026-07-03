@@ -97,7 +97,6 @@ def obrabotka(command, id):
     elif ("охран" in command) or ("СОХРАН" in command):
         data = get_json(f"{API}{id}")
         if id:
-            image_filename = FOLDER / f"{id}.jpeg"
             download_file(data["image"], id)
             print(f"Картинка для персонажа {data["name"]} сохранена в файл {id}.jpeg")
         else:
