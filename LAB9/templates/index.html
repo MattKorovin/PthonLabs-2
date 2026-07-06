@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+
+<form method="POST">
+
+    <label>
+        <input type="text" name="city">
+    </label>
+
+    <label>
+        <input type="date" name="date">
+    </label>
+
+    <button type="submit" name="action" value="show">
+        Show
+    </button>
+
+    <button type="submit" name="action" value="clear">
+        Clear
+    </button>
+
+</form>
+
+<table>
+
+{% for visit in visits %}
+
+<tr>
+    <td>{{ visit.city }}</td>
+    <td>{{ visit.visit_date }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
