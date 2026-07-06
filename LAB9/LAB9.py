@@ -49,4 +49,5 @@ def index():
     return render_template("index.html", visits=visits, city=city, date=date)
 
 
+print("Лабораторная работа №9\nВыполнил: Коровин Матвей\nВариант 3\n")
 app.run()

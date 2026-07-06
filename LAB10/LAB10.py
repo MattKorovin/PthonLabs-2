@@ -9,9 +9,12 @@ import json
 
 
 DESC_FILENAME = "description.txt"
+USE_VOICE = 1 # Если 0 - то анализирует готовые аудиофайлы
+
+# Без этого не работало
 FOLDER = Path(__file__).resolve().parent  # Папка программы
 TEMPFILE = FOLDER / "voice.wav"
-USE_VOICE = 1
+
 MODEL = "tiny"
 PROMPT = "Дай точную расшифорвку на русском языке: случайный, эпизод, сохранить, показать, разрешение"
 EXTENSIONS = {
@@ -83,6 +86,7 @@ def download_file(url, id):
 
 def obrabotka(command, id):
     if ("лучай" in command) or ("СЛУЧАЙ" in command):
+        # Всего записей на сайте (на момент создания лабы) - 826
         id = np.random.randint(1, 826)
         data = get_json(f"{API}{id}")
         print(f"Имя персонажа: {data["name"]}")
